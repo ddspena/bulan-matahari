@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Posisi Matahari & Bulan — Siang & Malam</title>
+    <title>Posisi Matahari & Bulan — Gerhana & Hitungan Mundur</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -13,7 +13,8 @@
             position: absolute; top: 10px; right: 10px; z-index: 1000;
             background: rgba(255, 255, 255, 0.96); padding: 15px 20px;
             border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.35);
-            max-width: 400px; font-size: 14px; line-height: 1.6;
+            max-width: 420px; font-size: 14px; line-height: 1.6;
+            max-height: 90vh; overflow-y: auto;
         }
         .info-panel h3 { margin: 0 0 12px 0; font-size: 16px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
         .info-panel .entry { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed #ddd; }
@@ -31,6 +32,29 @@
         .diag.err { color: #e74c3c; background: #fdecea; }
         .diag.ok { color: #16a085; background: #e8f8f2; }
 
+        /* Panel Gerhana */
+        .eclipse-section {
+            margin-top: 16px; border-top: 2px solid #c0392b; padding-top: 12px;
+        }
+        .eclipse-title { font-weight: 700; font-size: 15px; color: #c0392b; margin-bottom: 10px; }
+        .eclipse-card {
+            background: #fdf2f2; border-left: 4px solid #e74c3c;
+            padding: 10px 12px; border-radius: 6px; margin-bottom: 10px;
+        }
+        .eclipse-card.next {
+            background: #fff9e6; border-left-color: #f39c12;
+        }
+        .eclipse-card .ec-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 700; }
+        .eclipse-card .ec-title { font-size: 15px; font-weight: 700; color: #2c3e50; margin: 2px 0 4px; }
+        .eclipse-card .ec-detail { font-size: 12px; color: #555; margin-bottom: 2px; }
+        .eclipse-card .ec-countdown {
+            font-size: 16px; font-weight: 800; color: #e67e22; margin-top: 8px;
+            font-variant-numeric: tabular-nums; letter-spacing: 0.5px;
+        }
+        .eclipse-card .ec-countdown.done { color: #27ae60; }
+        .eclipse-card .ec-region { font-size: 12px; color: #16a085; font-weight: 600; margin-top: 4px; }
+
+        /* Label peta */
         .map-label { background: rgba(255,255,255,0.95); border: none; box-shadow: 0 2px 6px rgba(0,0,0,0.35); font-weight: 700; font-size: 13px; padding: 3px 9px; border-radius: 6px; white-space: nowrap; }
         .map-label.sun-label { color: #b95600; border-left: 4px solid #f39c12; }
         .map-label.moon-label { color: #155a85; border-left: 4px solid #2980b9; }
@@ -67,6 +91,32 @@
         <div style="font-size: 12px; color: #888;">
             <span id="lastUpdate">Update terakhir: -</span>
         </div>
+
+        <!-- ============================================================ -->
+        <!-- PANEL GERHANA -->
+        <!-- ============================================================ -->
+        <div class="eclipse-section">
+            <div class="eclipse-title">🌑 Info Gerhana</div>
+
+            <div class="eclipse-card">
+                <div class="ec-label">Terakhir</div>
+                <div class="ec-title">Gerhana Bulan Sebagian (96,3%)</div>
+                <div class="ec-detail">📅 28 Agustus 2026</div>
+                <div class="ec-detail">⏰ Puncak: 04:14 UTC / 11:14 WIB</div>
+                <div class="ec-region">🌎 Terlihat: Amerika, Eropa, Afrika, Asia Barat/Tengah</div>
+                <div class="ec-detail" style="color:#888; font-size:11px; margin-top:2px;">❌ Tidak terlihat dari Indonesia</div>
+            </div>
+
+            <div class="eclipse-card next">
+                <div class="ec-label">Berikutnya</div>
+                <div class="ec-title">Gerhana Matahari Cincin 🌋</div>
+                <div class="ec-detail">📅 6 Februari 2027</div>
+                <div class="ec-detail">⏰ Puncak: 16:00 UTC / 23:00 WIB</div>
+                <div class="ec-region">🌎 Terlihat: Chili, Argentina, Uruguay, Brasil, Pantai Gading, Ghana, Togo, Benin, Nigeria</div>
+                <div class="ec-countdown" id="eclipseCountdown">Menghitung...</div>
+            </div>
+        </div>
+
         <div class="legend-note">
             <span class="swatch"></span>Area gelap = malam (tidak terkena Matahari)<br>
             <span class="swatch term" style="background:transparent;border-color:#ffcc00;"></span>Garis kuning = terminator (batas siang/malam)
@@ -110,22 +160,14 @@
         // ============================================================
         // AREA MALAM (NIGHT SIDE) + TERMINATOR
         // ============================================================
-        // Poligon gelap menutupi bagian Bumi yang tidak terkena sinar Matahari
         const nightPolygon = L.polygon([], {
-            stroke: false,
-            fillColor: '#0a1128',
-            fillOpacity: 0.58,
-            interactive: false,
-            noClip: true
+            stroke: false, fillColor: '#0a1128', fillOpacity: 0.58,
+            interactive: false, noClip: true
         }).addTo(map);
 
-        // Garis kuning di sepanjang terminator (batas siang/malam)
         const terminatorLine = L.polyline([], {
-            color: '#ffcc00',
-            weight: 2,
-            opacity: 0.85,
-            interactive: false,
-            noClip: true
+            color: '#ffcc00', weight: 2, opacity: 0.85,
+            interactive: false, noClip: true
         }).addTo(map);
 
         // ============================================================
@@ -147,8 +189,6 @@
         // ============================================================
         let workingMethod = null;
 
-        function errStrSafe(e) { return errStr(e); }
-
         function getEquatorRobust(body, date) {
             const isSun = (body === Astronomy.Body.Sun);
             const variants = isSun ? ['Sun', 0] : ['Moon', 1];
@@ -168,19 +208,19 @@
                     const equ = Astronomy.Equator(b, date, null, true, true);
                     workingMethod = 'null+ofdate(body=' + b + ')';
                     return equ;
-                } catch (e) { errors.push('[null+ofdate/' + b + '] ' + errStrSafe(e)); }
+                } catch (e) { errors.push('[null+ofdate/' + b + '] ' + errStr(e)); }
                 if (typeof Astronomy.Observer === 'function') {
                     try {
                         const equ = Astronomy.Equator(b, date, new Astronomy.Observer(0, 0, 0), true, true);
                         workingMethod = 'obs+ofdate(body=' + b + ')';
                         return equ;
-                    } catch (e) { errors.push('[obs+ofdate/' + b + '] ' + errStrSafe(e)); }
+                    } catch (e) { errors.push('[obs+ofdate/' + b + '] ' + errStr(e)); }
                 }
                 try {
                     const equ = Astronomy.Equator(b, date, null, false, true);
                     workingMethod = 'null+J2000(body=' + b + ')';
                     return equ;
-                } catch (e) { errors.push('[null+J2000/' + b + '] ' + errStrSafe(e)); }
+                } catch (e) { errors.push('[null+J2000/' + b + '] ' + errStr(e)); }
             }
             throw new Error('Semua pendekatan Equator gagal:\n' + errors.join('\n'));
         }
@@ -204,15 +244,8 @@
         // ============================================================
         // HITUNG & GAMBAR AREA MALAM
         // ============================================================
-        //
-        // Untuk setiap longitude, latitude terminator dihitung dengan rumus:
-        //   tan(lat_terminator) = -cos(lng - lng_sun) / tan(lat_sun)
-        // Area malam berada di sisi berlawanan dari posisi Matahari:
-        //   - Jika Matahari di belahan utara (lat_sun > 0), malam di selatan terminator.
-        //   - Jika Matahari di belahan selatan (lat_sun < 0), malam di utara terminator.
-        //
         function updateNightArea(sunLat, sunLng) {
-            const EPS = 0.01; // hindari pembagian nol di ekuinoks
+            const EPS = 0.01;
             const effSunLat = Math.abs(sunLat) < EPS ? (sunLat >= 0 ? EPS : -EPS) : sunLat;
             const sunLatRad = effSunLat * Math.PI / 180;
 
@@ -226,7 +259,6 @@
                 curvePoints.push([lat, lng]);
             }
 
-            // Tutup poligon melalui kutub yang berada di sisi malam
             const nightPole = effSunLat >= 0 ? -90 : 90;
             polyPoints.push([nightPole, 180]);
             polyPoints.push([nightPole, -180]);
@@ -289,6 +321,35 @@
         const GEO_REFRESH_MS = 10 * 60 * 1000;
 
         // ============================================================
+        // HITUNG MUNDUR GERHANA
+        // ============================================================
+        // Data terverifikasi: Gerhana Matahari Cincin 6 Februari 2027
+        // Puncak global: 16:00 UTC (23:00 WIB) — sumber: NASA via Kompas.tv & detik.com
+        const NEXT_ECLIPSE_UTC = new Date('2027-02-06T16:00:00Z');
+
+        function updateEclipseCountdown() {
+            const el = document.getElementById('eclipseCountdown');
+            if (!el) return;
+
+            const now = new Date();
+            const diff = NEXT_ECLIPSE_UTC - now;
+
+            if (diff <= 0) {
+                el.textContent = '🌑 Gerhana sedang berlangsung / telah lewat!';
+                el.className = 'ec-countdown done';
+                return;
+            }
+
+            const days = Math.floor(diff / 86400000);
+            const hours = Math.floor((diff % 86400000) / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+
+            el.textContent = `⏳ ${days} hari ${hours} jam ${minutes} menit ${seconds} detik lagi`;
+            el.className = 'ec-countdown';
+        }
+
+        // ============================================================
         // RENDER UI
         // ============================================================
         function renderUI(now, sunPos, moonPos, sun, moon) {
@@ -334,10 +395,8 @@
 
             diag('✅ Astronomy OK | Metode: ' + (workingMethod || '?'), 'ok');
 
-            // GAMBAR AREA MALAM + TERMINATOR
             updateNightArea(sunPos.lat, sunPos.lng);
 
-            // Update marker & koordinat
             sunMarker.setLatLng([sunPos.lat, sunPos.lng]);
             moonMarker.setLatLng([moonPos.lat, moonPos.lng]);
             document.getElementById('sunCoord').textContent = 'Koordinat: ' + sunPos.lat.toFixed(2) + '°, ' + sunPos.lng.toFixed(2) + '°';
@@ -374,8 +433,14 @@
             renderUI(now, sunPos, moonPos, sunCache, moonCache);
         }
 
+        // Jalankan
         updatePositions();
         setInterval(updatePositions, 30000);
+
+        // Hitung mundur gerhana (update tiap detik)
+        updateEclipseCountdown();
+        setInterval(updateEclipseCountdown, 1000);
+
         window.addEventListener('resize', function () { map.invalidateSize(); });
 
     })();
