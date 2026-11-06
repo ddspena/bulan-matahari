@@ -1,32 +1,32 @@
-# 🌍 Peta Posisi Matahari & Bulan Real-time
+# 🌍 Peta Posisi Matahari, Bulan & Waktu Lokal Dunia
 
-Aplikasi web interaktif satu halaman (single-file HTML) yang menampilkan **posisi Matahari dan Bulan secara real-time** di atas peta **OpenStreetMap**, lengkap dengan:
+Aplikasi web interaktif satu file HTML yang menampilkan **posisi Matahari dan Bulan secara real-time** di atas peta **OpenStreetMap**, dilengkapi dengan **area malam**, **terminator siang/malam**, **nama negara + zona waktu**, **hitungan mundur gerhana**, dan **klik peta untuk melihat waktu lokal, hari, dan tanggal** di lokasi mana pun di dunia.
 
-- ☀️ **Subsolar Point** — titik di Bumi yang saat ini tepat berada di bawah Matahari (siang hari)
-- 🌙 **Sublunar Point** — titik di Bumi yang saat ini tepat berada di bawah Bulan
-- 🌓 **Area malam (night side)** yang diarsir gelap dan **garis terminator** yang memisahkan siang dan malam
-- 🏳️ **Nama negara** dan bendera di titik tersebut
-- 🕒 **Zona waktu** dan **waktu lokal** di titik tersebut
+Cocok untuk desktop maupun **mobile** — panel dapat dilipat agar peta tetap lega di layar kecil.
 
 ---
 
-## ✨ Fitur
+## ✨ Fitur Utama
 
 | Fitur | Keterangan |
 |---|---|
-| **Peta interaktif** | OpenStreetMap via Leaflet — bisa di-zoom, digeser, dan di-klik |
-| **Subsolar & Sublunar Point** | Dihitung secara akurat memakai library [Astronomy Engine](https://github.com/cosinekitty/astronomy) |
-| **Area malam** | Poligon semi-transparan menutupi belahan Bumi yang sedang gelap |
-| **Garis terminator** | Garis kuning yang menandai batas siang/malam |
-| **Nama negara** | Otomatis lewat reverse geocoding (BigDataCloud API, gratis tanpa API key) |
-| **Bendera negara** | Emoji bendera dikonversi dari kode ISO negara |
-| **Zona waktu** | IANA timezone (mis. `Asia/Jakarta`) beserta singkatan (`WIB`) via Open-Meteo API |
-| **Waktu lokal** | Jam di lokasi tersebut, dihitung dengan `Intl.DateTimeFormat` |
-| **Auto-refresh** | Posisi diperbarui setiap **30 detik**; info negara & zona waktu di-cache 10 menit |
-| **Fallback** | Jika suatu titik berada di laut, ditampilkan `🌊 Laut / Samudra` |
-| **Timeout API** | Setiap `fetch` punya timeout 10 detik supaya UI tidak macet |
-| **Diagnostik** | Panel kecil menampilkan status library & metode perhitungan yang berhasil |
+| ☀️ **Subsolar Point** | Titik di Bumi yang saat ini tepat berada di bawah Matahari |
+| 🌙 **Sublunar Point** | Titik di Bumi yang saat ini tepat berada di bawah Bulan |
+| 🌓 **Area malam (night side)** | Belahan Bumi yang sedang gelap diarsir biru gelap transparan |
+| 🟡 **Garis terminator** | Garis kuning pemisah siang dan malam |
+| 🏳️ **Nama negara + bendera** | Otomatis lewat reverse geocoding, muncul di label peta & panel |
+| 🕒 **Zona waktu & waktu lokal** | Untuk titik Matahari dan Bulan |
+| 👆 **Klik peta → waktu lokal** | Ketuk/klik di mana saja → popup menampilkan **jam (berdetak tiap detik), hari, dan tanggal** di lokasi tersebut |
+| ⏳ **Hitungan mundur gerhana** | Info gerhana terakhir & berikutnya + hitungan mundur real-time |
+| 📱 **Mobile-friendly** | Panel *bottom sheet* yang bisa dibuka/tutup dengan tap |
+| 🔄 **Auto-refresh** | Posisi diperbarui tiap **30 detik**, jam popup tiap **1 detik** |
+| ⏱️ **Timeout API** | Setiap `fetch` punya timeout 10 detik agar UI tidak macet |
+| 🧪 **Diagnostik** | Panel kecil menampilkan status library & metode perhitungan yang berhasil |
 
 ---
 
 ## 📁 Struktur Repositori
+📁 repo-anda/
+├── 📄 index.html ← aplikasi utama (HTML + CSS + JS satu file)
+├── 📄 astronomy.browser.min.js ← library Astronomy Engine (dimuat lokal)
+└── 📄 README.md ← file ini
